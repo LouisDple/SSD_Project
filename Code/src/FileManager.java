@@ -1,25 +1,30 @@
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.io.BufferedReader;
 
-import java.io.File;
+
 
 import java.io.FileReader;
-import java.io.FileWriter;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class FileManager {
+public class FileManager extends UnicastRemoteObject implements remoteServer {
     private Path rootDirectory;
 
     
-    public FileManager(String rootPath) {
+    public FileManager(String rootPath) throws RemoteException {
+        super();
         this.rootDirectory = Paths.get(rootPath).toAbsolutePath().normalize();
+        
     }
+    @Override
     public List<Path> listDirectory(String directoryPath) throws IOException {
         try{  
             Path dir = rootDirectory.resolve(directoryPath);
@@ -32,6 +37,7 @@ public class FileManager {
             return null;
         }
     }
+    @Override
     public void createDirectory(String directoryPath) {
         try {
             Path newDir = rootDirectory.resolve(directoryPath);
@@ -42,6 +48,7 @@ public class FileManager {
             // Vous pouvez choisir de relancer l'exception ou de la gérer ici
         }
     }
+    @Override
     public void delete(String path) throws IOException {
         try{
             Path fileOrDir = rootDirectory.resolve(path);
@@ -51,6 +58,7 @@ public class FileManager {
             // Vous pouvez choisir de relancer l'exception ou de la gérer ici
         }
     }
+    @Override
     public boolean exists(String path) {
         Path fileOrDir = rootDirectory.resolve(path);
         return Files.exists(fileOrDir);
@@ -58,7 +66,7 @@ public class FileManager {
 
     
     
-    
+    @Override
     public void readTextFile2(String filepath) throws IOException {
         
         

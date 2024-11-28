@@ -1,11 +1,10 @@
 
-import java.nio.file.*;
+
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
+
 class FileManagerTest {
 
-    public void testListDirectory() {
+    public void testListDirectory() throws IOException {
         FileManager fm = new FileManager("C:\\Users\\Depelley Louis\\Desktop\\courscarta\\ssd\\SSD_Project\\SSD_Project");
         try {
             fm.createDirectory("Code\\src\\testDir\\dir1");
@@ -19,7 +18,7 @@ class FileManagerTest {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args){
+    public static void main(String[] args) throws IOException {
         new FileManagerTest().testListDirectory();
     }
 }
