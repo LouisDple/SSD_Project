@@ -10,7 +10,12 @@ public class clientImplementation {
      * @throws MalformedURLException
      */
     public static void main(String[] args) throws RemoteException, MalformedURLException, NotBoundException {
-        FileManager t = (FileManager) Naming.lookup("rmi://localhost:5670/FileManager");
-        System.out.println("Hola server...= " + t.sayHello("Pepe") + "Hora actual=" + t.getTime());
+        remoteServer t = (remoteServer) Naming.lookup("rmi://localhost:8080/FileManager");
+        try{
+        t.readTextFile2("C:\\Users\\Depelley Louis\\Desktop\\courscarta\\ssd\\SSD_Project\\SSD_Project\\Code\\src\\testDir\\12.txt");
+        }
+        catch(Exception e){
+            System.out.println(e.getMessage());
+        }
     }
 }

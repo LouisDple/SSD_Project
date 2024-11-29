@@ -86,10 +86,10 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
             reader.close();
     }
 
-    public void copiar(String filename,String destinationPath) throws IOException {
+    public void copiar(String filename,String localDestinationPath) throws IOException {
         Path ruta1=Paths.get(filename);
         FileChannel in = (FileChannel) Files.newByteChannel(ruta1);
-        Path ruta2=Paths.get(destinationPath);
+        Path ruta2=Paths.get(localDestinationPath);
         FileChannel out=(FileChannel)
         Files.newByteChannel(ruta2,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
         ByteBuffer buffer = ByteBuffer.allocate(1024*8);
