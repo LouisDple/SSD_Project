@@ -13,4 +13,5 @@ public interface remoteServer extends Remote {
     public boolean exists(String path)throws IOException;
     public void readTextFile2(String filepath) throws IOException;
     public void copiar(String filename,String destinationPath) throws IOException;
+    public List<String> showDirectory(String path) throws RemoteException;
 }

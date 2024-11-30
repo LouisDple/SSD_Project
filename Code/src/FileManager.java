@@ -4,9 +4,10 @@ import java.nio.file.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.BufferedReader;
+import java.io.File;
 
-
-
+import java.util.ArrayList;
+import java.util.List;
 import java.io.FileReader;
 
 import java.io.IOException;
@@ -85,7 +86,7 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
             }
             reader.close();
     }
-
+    @Override
     public void copiar(String filename,String localDestinationPath) throws IOException {
         Path ruta1=Paths.get(filename);
         FileChannel in = (FileChannel) Files.newByteChannel(ruta1);
@@ -101,5 +102,26 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
         in.close();
         out.close();
     }   
-    // Méthodes à implémenter
+
+    
+  
+
+
+    // ...
+
+    @Override
+    public List<String> showDirectory(String path) throws RemoteException {
+        File directory = new File(path);
+        if (!directory.exists() || !directory.isDirectory()) {
+            throw new RemoteException("Le chemin spécifié n'est pas un répertoire");
+        }
+
+        List<String> filesAndDirectories = new ArrayList<>();
+        for (File file : directory.listFiles()) {
+            filesAndDirectories.add(file.getName());
+        }
+
+        return filesAndDirectories;
+    }
 }
+    // Méthodes à implémenter
