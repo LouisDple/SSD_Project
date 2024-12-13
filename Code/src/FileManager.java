@@ -5,9 +5,11 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.BufferedReader;
 import java.io.File;
-
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.List;
+
 import java.io.FileReader;
 
 import java.io.IOException;
@@ -25,19 +27,8 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
         this.rootDirectory = Paths.get(rootPath).toAbsolutePath().normalize();
         
     }
-    @Override
-    public List<Path> listDirectory(String directoryPath) throws IOException {
-        try{  
-            Path dir = rootDirectory.resolve(directoryPath);
-            
-            return Files.list(dir).collect(Collectors.toList());
-        }
-        catch(IOException e){
-            e.printStackTrace();
-            System.err.println("erreur lors de la création de la liste : " + e.getMessage());
-            return null;
-        }
-    }
+    
+    
     @Override
     public void createDirectory(String directoryPath) {
         try {
@@ -65,7 +56,64 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
         return Files.exists(fileOrDir);
     }
 
+    public void uploadFileToServer(String filePath, String serverPath) throws RemoteException, IOException {
+        try {
+            File file = new File(filePath);
+            File serverPathFile = new File(serverPath);
     
+            FileInputStream in = new FileInputStream(file);
+            FileOutputStream out = new FileOutputStream(serverPathFile);
+    
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+    
+            in.close();
+            out.flush();
+            out.close();
+    
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    
+        System.out.println("Done writing data...");
+    }
+
+   // https://www.codejava.net/java-se/ftp/how-to-download-a-complete-folder-from-a-ftp-server
+    
+	
+	public byte[] downloadFileFromServer(String serverpath) throws RemoteException {
+					
+		byte [] mydata;	
+		
+			File serverpathfile = new File(serverpath);			
+			mydata=new byte[(int) serverpathfile.length()];
+			FileInputStream in;
+			try {
+				in = new FileInputStream(serverpathfile);
+				try {
+					in.read(mydata, 0, mydata.length);
+				} catch (IOException e) {
+					
+					e.printStackTrace();
+				}						
+				try {
+					in.close();
+				} catch (IOException e) {
+				
+					e.printStackTrace();
+				}
+				
+			} catch (FileNotFoundException e) {
+				
+				e.printStackTrace();
+			}		
+			
+			return mydata;
+				 
+	}
     
     @Override
     public void readTextFile2(String filepath) throws IOException {
@@ -123,5 +171,54 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
 
         return filesAndDirectories;
     }
+    
+    public  List<String> filePathsList(String directoryPath) throws IOException, RemoteException{
+        List<String> filePaths = new ArrayList<>();
+        File directory = new File(directoryPath);
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            for (File file : files) {
+                if (file.isFile()) {
+                    filePaths.add(file.getAbsolutePath());
+                }
+            }
+        }
+        return filePaths;
+
+        
+        
+    }
+    
+    
+
+    @Override
+    public FolderData getFolderData(String directoryPath) throws RemoteException {
+        System.out.println(directoryPath);
+        File directory = new File(directoryPath);
+        System.out.println(directoryPath);
+        if (!directory.isDirectory()) {
+            throw new RemoteException("Le chemin spécifié n'est pas un dossier : " + directoryPath);
+        }
+
+        return buildFolderData(directory);
+    }
+
+    private FolderData buildFolderData(File directory) throws RemoteException {
+        FolderData folderData = new FolderData(directory.getName());
+
+        for (File file : directory.listFiles()) {
+            if (file.isDirectory()) {
+                folderData.addSubFolder(buildFolderData(file));
+            } else {
+                folderData.addFile(file.getName());
+            }
+        }
+
+        return folderData;
+    }
 }
+
+
+    
+
     // Méthodes à implémenter
