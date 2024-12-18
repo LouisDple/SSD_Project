@@ -1,10 +1,9 @@
 import java.rmi.*;
-import java.rmi.server.*;
-import java.rmi.registry.Registry;
-import java.rmi.registry.LocateRegistry;
-import java.net.*;
-import java.io.*;
 
+import java.rmi.registry.LocateRegistry;
+
+import java.io.*;
+// it is the code that will run the registry server for basic tests there is not much to customize
 public class serverImplementation {
     
     public static void main(String args[]) {

@@ -15,7 +15,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 
 public class FileManager extends UnicastRemoteObject implements remoteServer {
@@ -56,30 +56,25 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
         return Files.exists(fileOrDir);
     }
 
-    public void uploadFileToServer(String filePath, String serverPath) throws RemoteException, IOException {
-        try {
-            File file = new File(filePath);
-            File serverPathFile = new File(serverPath);
-    
-            FileInputStream in = new FileInputStream(file);
-            FileOutputStream out = new FileOutputStream(serverPathFile);
-    
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-            }
-    
-            in.close();
-            out.flush();
-            out.close();
-    
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    
-        System.out.println("Done writing data...");
-    }
+    public void uploadFileToServer(byte[] mydata, String serverpath, int length) throws RemoteException {
+			
+    	try {
+    		File serverpathfile = new File(serverpath);
+    		FileOutputStream out=new FileOutputStream(serverpathfile);
+    		byte [] data=mydata;
+			
+    		out.write(data);
+			out.flush();
+	    	out.close();
+	 
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
+    	
+    	System.out.println("Done writing data...");
+		
+	}
 
    // https://www.codejava.net/java-se/ftp/how-to-download-a-complete-folder-from-a-ftp-server
     
@@ -193,9 +188,9 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
 
     @Override
     public FolderData getFolderData(String directoryPath) throws RemoteException {
-        System.out.println(directoryPath);
+        
         File directory = new File(directoryPath);
-        System.out.println(directoryPath);
+        
         if (!directory.isDirectory()) {
             throw new RemoteException("Le chemin spécifié n'est pas un dossier : " + directoryPath);
         }
@@ -216,8 +211,11 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
 
         return folderData;
     }
-}
 
+    
+
+    
+}
 
     
 

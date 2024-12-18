@@ -1,9 +1,12 @@
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+
+// this is the code that implements a classe for the data of a file that helps with working with recusrive methods for download and upload of folders
 public class FolderData implements Serializable {
-    private static final long serialVersionUID = 1L; // Ajout pour compatibilité
+    private static final long serialVersionUID = 1L; 
 
     private String name;
     private List<FolderData> subFolders;
@@ -34,4 +37,6 @@ public class FolderData implements Serializable {
     public void addFile(String fileName) {
         files.add(fileName);
     }
+
+    
 }
