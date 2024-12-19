@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 
 public class clientImplementation2 {
 
+    //this method handles the downloading of a file passing in arguments whats returns the remote method getfolderdata
     public static void saveFolderData(remoteServer server, FolderData folderData, String serverFolderPath, String localPath) throws Exception {
         Files.createDirectories(Paths.get(localPath));
 
@@ -21,7 +22,7 @@ public class clientImplementation2 {
             saveFolderData(server, subFolder, serverFolderPath + File.separator + subFolder.getName(), localPath + File.separator + subFolder.getName());
         }
     }
-
+    //method to upload a folder to the server you have to pass the data of the file
     public static void uploadFileHandler(remoteServer server , byte[] fileData,String clientPath, String serverPath) throws Exception{
         File clientpathfile = new File(clientPath);
 				byte [] mydata=new byte[(int) clientpathfile.length()];
@@ -32,22 +33,8 @@ public class clientImplementation2 {
 				 
 				 in.close();
     }
-
-    public static FolderData buildFolderDataLocal(String directoryPath) {
-        FolderData folderData = new FolderData(new File(directoryPath).getName());
-
-        for (File file : new File(directoryPath).listFiles()) {
-            if (file.isDirectory()) {
-                folderData.addSubFolder(buildFolderDataLocal(file.getAbsolutePath()));
-            } else {
-                folderData.addFile(file.getName());
-            }
-        }
-
-        return folderData;
-    }
-    
-    
+ 
+    //this method build the folderdata structure to use the uploadfolderhandler method 
     public static FolderData buildFolderDataLocal(File directory) throws Exception {
         
         FolderData folderData = new FolderData(directory.getName());
@@ -62,24 +49,24 @@ public class clientImplementation2 {
 
         return folderData;
     }
-
+    //handles the upload of a folder from the cline tto the server you have to pass the data structure of the folder specified (folderdata)
     public static void uploadFolderHandler(remoteServer server , FolderData folderData, String clientPath, String serverPath) throws Exception{
-        System.out.println("ici 1");
-        Files.createDirectories(Paths.get(serverPath));
         
+        
+        server.createDirectory(serverPath);
         try{
-            System.out.println("ici i");
+            
             for (String fileName : folderData.getFiles()) {
                 
                 
-                System.out.println("ici ii");
+                
                 String clientFilePath = clientPath + File.separator + fileName;
                 String serverFilePath = serverPath + File.separator + fileName;
 
                 byte[] fileData = Files.readAllBytes(Paths.get(clientFilePath));
                 System.out.println("uploading to server...");
                 server.uploadFileToServer(fileData, serverFilePath, fileData.length);
-                System.out.println("ici 2");
+                
             }
 
             for (FolderData subFolder : folderData.getSubFolders()) {
@@ -95,7 +82,7 @@ public class clientImplementation2 {
         
     }
         
-
+    //this method handles the download of a file from the server  you dont need any ohter method to use this
     public static void downloadFileHandler(remoteServer server,String clientPath, String serverPath) throws Exception{
         byte [] mydata = server.downloadFileFromServer(serverPath);
 				System.out.println("downloading...");
@@ -105,7 +92,7 @@ public class clientImplementation2 {
 				out.flush();
 		    	out.close();
     }
-
+    //prints the data structure of type "folderData" of a folder 
     public static void printFolderData(FolderData folderData) {
         System.out.println("Nom du dossier : " + folderData.getName());
         System.out.println("Fichiers :");
@@ -136,12 +123,12 @@ public class clientImplementation2 {
             serverFolderPath = serverFolderPath + File.separator + folderData.getName();
             uploadFolderHandler(server,folderData,localFolderPath,serverFolderPath);
             ///////////////////////////////////////////////////////////////
-            
+            /* 
             // to download a whole folder from server://////////////:
             FolderData folderData2 = server.getFolderData(serverFolderPath);
             saveFolderData(server, folderData2, serverFolderPath, localFolderPath);
             //////////////////////////////////////////////////////////////////////
-            System.out.println("Téléchargement terminé avec succs.");
+            System.out.println("Téléchargement terminé avec succs.");*/
         } catch (Exception e) {
             e.printStackTrace();
         }

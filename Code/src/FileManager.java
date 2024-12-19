@@ -29,33 +29,38 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
     }
     
     
+    //this method creates a directory o the severside 
     @Override
     public void createDirectory(String directoryPath) {
         try {
             Path newDir = rootDirectory.resolve(directoryPath);
             Files.createDirectories(newDir);
-            System.out.println("le fichier a bien été créé");   
+            System.out.println("folder created");   
         } catch (IOException e) {
-            System.err.println("Erreur lors de la création du répertoire : " + e.getMessage());
+            System.err.println("eror during folder creation: " + e.getMessage());
             // Vous pouvez choisir de relancer l'exception ou de la gérer ici
         }
     }
+    
+    //this method deletes a directory on the serverside 
     @Override
-    public void delete(String path) throws IOException {
+    public void deleteDirectory(String path) throws IOException {
         try{
             Path fileOrDir = rootDirectory.resolve(path);
             Files.delete(fileOrDir);
         } catch (IOException e) {
             System.err.println("Erreur lors de la suppression : " + e.getMessage());
-            // Vous pouvez choisir de relancer l'exception ou de la gérer ici
+            
         }
     }
+    //checks if a file or directory exists on the serverside 
     @Override
     public boolean exists(String path) {
         Path fileOrDir = rootDirectory.resolve(path);
         return Files.exists(fileOrDir);
     }
 
+    //uploads a file on the server given an array of bytes of the file
     public void uploadFileToServer(byte[] mydata, String serverpath, int length) throws RemoteException {
 			
     	try {
@@ -79,7 +84,9 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
    // https://www.codejava.net/java-se/ftp/how-to-download-a-complete-folder-from-a-ftp-server
     
 	
-	public byte[] downloadFileFromServer(String serverpath) throws RemoteException {
+	
+   //returns an array of bytes to the client so it can download file from the server , the array needs to ba hanfled on the client implementation
+   public byte[] downloadFileFromServer(String serverpath) throws RemoteException {
 					
 		byte [] mydata;	
 		
@@ -111,6 +118,7 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
 	}
     
     @Override
+    //this methode reads a file on the serverside
     public void readTextFile2(String filepath) throws IOException {
         
         
@@ -129,11 +137,13 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
             }
             reader.close();
     }
-    @Override
-    public void copiar(String filename,String localDestinationPath) throws IOException {
-        Path ruta1=Paths.get(filename);
+    
+    //this method copies a file to another folder on the serverside
+    @Override 
+    public void copiar(String filePath,String destinationPath) throws IOException {
+        Path ruta1=Paths.get(filePath);
         FileChannel in = (FileChannel) Files.newByteChannel(ruta1);
-        Path ruta2=Paths.get(localDestinationPath);
+        Path ruta2=Paths.get(destinationPath);
         FileChannel out=(FileChannel)
         Files.newByteChannel(ruta2,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
         ByteBuffer buffer = ByteBuffer.allocate(1024*8);
@@ -151,25 +161,14 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
 
 
     // ...
-
-    @Override
-    public List<String> showDirectory(String path) throws RemoteException {
-        File directory = new File(path);
-        if (!directory.exists() || !directory.isDirectory()) {
-            throw new RemoteException("Le chemin spécifié n'est pas un répertoire");
-        }
-
-        List<String> filesAndDirectories = new ArrayList<>();
-        for (File file : directory.listFiles()) {
-            filesAndDirectories.add(file.getName());
-        }
-
-        return filesAndDirectories;
-    }
+    //this method shows all 
     
+    
+    //this method creates an array of strings showing the paths of a chosen directory on server side
     public  List<String> filePathsList(String directoryPath) throws IOException, RemoteException{
         List<String> filePaths = new ArrayList<>();
         File directory = new File(directoryPath);
+        
         if (directory.isDirectory()) {
             File[] files = directory.listFiles();
             for (File file : files) {
@@ -177,8 +176,14 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
                     filePaths.add(file.getAbsolutePath());
                 }
             }
+            return filePaths;
         }
-        return filePaths;
+        
+        else{
+            System.out.println("this is not a directory");
+            return null;
+
+        }
 
         
         
@@ -187,17 +192,20 @@ public class FileManager extends UnicastRemoteObject implements remoteServer {
     
 
     @Override
+    // this is the function you call in the client implementation to use  buildfolder data (you use it only for directories in the server side )
     public FolderData getFolderData(String directoryPath) throws RemoteException {
         
         File directory = new File(directoryPath);
         
         if (!directory.isDirectory()) {
-            throw new RemoteException("Le chemin spécifié n'est pas un dossier : " + directoryPath);
+            throw new RemoteException("Sepecified path is not a directory : " + directoryPath);
         }
 
         return buildFolderData(directory);
     }
 
+    
+    //this function encapsulate and returns all the paths of files in a directory and of its subdirectories in a recusrive way  (ton use for the server side)
     private FolderData buildFolderData(File directory) throws RemoteException {
         FolderData folderData = new FolderData(directory.getName());
 
