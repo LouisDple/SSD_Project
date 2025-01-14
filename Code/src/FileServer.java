@@ -9,8 +9,10 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class FileServer implements FileServerInterface {
     private static final Path ROOT_DIR = Paths.get("server_root");
@@ -19,9 +21,7 @@ public class FileServer implements FileServerInterface {
 
     public FileServer() {
         try {
-            if (!Files.exists(ROOT_DIR)) {
-                Files.createDirectory(ROOT_DIR);
-            }
+            Files.createDirectories(ROOT_DIR);
         } catch (IOException e) {
             System.err.println("Error creating root directory: " + e.getMessage());
         }
@@ -30,27 +30,56 @@ public class FileServer implements FileServerInterface {
 
     @Override
     public String uploadFileBlock(String fileName, byte[] data, int blockNumber) throws RemoteException {
-        Path filePath = ROOT_DIR.resolve(fileName);
-        try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-            channel.position(blockNumber * BLOCK_SIZE);
-            channel.write(ByteBuffer.wrap(data));
-            return "Block " + blockNumber + " uploaded.";
-        } catch (IOException e) {
-            throw new RemoteException("Error uploading block: " + e.getMessage(), e);
+        if (blockNumber < 0) {
+            throw new RemoteException("Invalid block number: " + blockNumber);
         }
+
+        executorService.submit(() -> {
+            try {
+                Path filePath = ROOT_DIR.resolve(fileName);
+                long fileSize = Files.exists(filePath) ? Files.size(filePath) : 0;
+                int maxBlockNumber = (int) Math.ceil((double) fileSize / BLOCK_SIZE);
+
+                if (blockNumber > maxBlockNumber) {
+                    throw new RemoteException("Block number exceeds file size: " + blockNumber);
+                }
+
+                try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+                    channel.position((long) blockNumber * BLOCK_SIZE);
+                    channel.write(ByteBuffer.wrap(data));
+                    System.out.println("Block " + blockNumber + " uploaded.");
+                }
+            } catch (IOException e) {
+                System.err.println("Error uploading block: " + e.getMessage());
+            }
+        });
+
+        return "Block upload scheduled: " + blockNumber;
     }
 
     @Override
     public byte[] downloadFileBlock(String fileName, int blockNumber) throws RemoteException {
-        Path filePath = ROOT_DIR.resolve(fileName);
-        byte[] data = new byte[BLOCK_SIZE];
-        try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ)) {
-            channel.position(blockNumber * BLOCK_SIZE);
-            ByteBuffer buffer = ByteBuffer.wrap(data);
-            int bytesRead = channel.read(buffer);
-            return bytesRead < BLOCK_SIZE ? ByteBuffer.wrap(data, 0, bytesRead).array() : data;
-        } catch (IOException e) {
-            throw new RemoteException("Error downloading block: " + e.getMessage(), e);
+        if (blockNumber < 0) {
+            throw new RemoteException("Invalid block number: " + blockNumber);
+        }
+
+        Future<byte[]> future = executorService.submit(() -> {
+            Path filePath = ROOT_DIR.resolve(fileName);
+            byte[] data = new byte[BLOCK_SIZE];
+            try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ)) {
+                channel.position((long) blockNumber * BLOCK_SIZE);
+                ByteBuffer buffer = ByteBuffer.wrap(data);
+                int bytesRead = channel.read(buffer);
+                return bytesRead < BLOCK_SIZE ? ByteBuffer.wrap(data, 0, bytesRead).array() : data;
+            } catch (IOException e) {
+                throw new RemoteException("Error downloading block: " + e.getMessage(), e);
+            }
+        });
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            throw new RemoteException("Error retrieving download result: " + e.getMessage(), e);
         }
     }
 
@@ -130,7 +159,7 @@ public class FileServer implements FileServerInterface {
         }
         return filesAndFolders;
     }
-    
+
     public String uploadDirectoryTree(String localPath, String serverPath) throws RemoteException {
         Path localDir = Paths.get(localPath);
         Path serverDir = ROOT_DIR.resolve(serverPath);
@@ -163,11 +192,29 @@ public class FileServer implements FileServerInterface {
 
     public static void main(String[] args) {
         try {
+            int port = 1099;
+            if (args.length > 0) {
+                port = Integer.parseInt(args[0]);
+            }
+
             FileServer server = new FileServer();
             FileServerInterface stub = (FileServerInterface) UnicastRemoteObject.exportObject(server, 0);
-            Registry registry = LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(port);
             registry.bind("FileServer", stub);
-            System.out.println("File server is ready.");
+            System.out.println("File server is ready on port " + port + ".");
+
+            try (Scanner scanner = new Scanner(System.in)) {
+                System.out.println("Type 'exit' to shut down the server.");
+                while (true) {
+                    if (scanner.nextLine().trim().equalsIgnoreCase("exit")) {
+                        System.out.println("Shutting down the server...");
+                        break;
+                    }
+                }
+            }
+
+            UnicastRemoteObject.unexportObject(server, true);
+            System.out.println("Server shut down.");
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
             e.printStackTrace();
