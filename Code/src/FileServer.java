@@ -34,28 +34,33 @@ public class FileServer implements FileServerInterface {
             throw new RemoteException("Invalid block number: " + blockNumber);
         }
 
-        executorService.submit(() -> {
-            try {
-                Path filePath = ROOT_DIR.resolve(fileName);
-                long fileSize = Files.exists(filePath) ? Files.size(filePath) : 0;
-                int maxBlockNumber = (int) Math.ceil((double) fileSize / BLOCK_SIZE);
+        Path filePath = ROOT_DIR.resolve(fileName);
+        try {
+            long fileSize = Files.exists(filePath) ? Files.size(filePath) : 0;
+            int maxBlockNumber = (int) Math.ceil((double) fileSize / BLOCK_SIZE);
 
-                if (blockNumber > maxBlockNumber) {
-                    throw new RemoteException("Block number exceeds file size: " + blockNumber);
-                }
+            // Correction: Allow uploading blocks beyond the current file size to handle new uploads
+            if (blockNumber > maxBlockNumber && fileSize > 0) {
+                throw new RemoteException("Block number exceeds current file size: " + blockNumber);
+            }
 
+            Future<?> future = executorService.submit(() -> {
                 try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                     channel.position((long) blockNumber * BLOCK_SIZE);
                     channel.write(ByteBuffer.wrap(data));
                     System.out.println("Block " + blockNumber + " uploaded.");
+                } catch (IOException e) {
+                    System.err.println("Error uploading block: " + e.getMessage());
                 }
-            } catch (IOException e) {
-                System.err.println("Error uploading block: " + e.getMessage());
-            }
-        });
+            });
 
-        return "Block upload scheduled: " + blockNumber;
+            future.get(); // Ensure the block is written before returning
+            return "Block upload completed: " + blockNumber;
+        } catch (IOException | InterruptedException | java.util.concurrent.ExecutionException e) {
+            throw new RemoteException("Error uploading block: " + e.getMessage(), e);
+        }
     }
+
 
     @Override
     public byte[] downloadFileBlock(String fileName, int blockNumber) throws RemoteException {
